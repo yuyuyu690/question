@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="質問">
+<meta name="theme-color" content="#0f1115">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>質問</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --fg: #f5f5f7;
+    --sub: #8e8e93;
+    --accent: #ffd166;
+    --card: #1a1d24;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f5ef;
+      --fg: #1a1a1a;
+      --sub: #6b6b6b;
+      --accent: #c97b18;
+      --card: #ffffff;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px 6px;
+    font-size: 13px;
+    color: var(--sub);
+    letter-spacing: 0.02em;
+  }
+  header .brand { font-weight: 600; color: var(--fg); }
+  header .count { font-variant-numeric: tabular-nums; }
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 28px;
+    position: relative;
+    cursor: pointer;
+  }
+  #q {
+    font-size: clamp(26px, 7vw, 40px);
+    line-height: 1.55;
+    font-weight: 600;
+    text-align: center;
+    max-width: 720px;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    animation: fadeIn 0.32s ease;
+  }
+  #source {
+    position: absolute;
+    bottom: 18px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--sub);
+    letter-spacing: 0.04em;
+  }
+  footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 20px 22px;
+    color: var(--sub);
+    font-size: 12px;
+    gap: 14px;
+  }
+  .hint { opacity: 0.7; }
+  .next-btn {
+    appearance: none;
+    background: var(--accent);
+    color: #1a1a1a;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+  .next-btn:active { transform: scale(0.96); }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span class="brand">質問</span>
+    <span class="count" id="count">— / —</span>
+  </header>
+  <main id="tap-area" aria-label="タップで次の質問">
+    <div id="q">タップして始める</div>
+    <div id="source"></div>
+  </main>
+  <footer>
+    <span class="hint">画面をタップで次の質問</span>
+    <button class="next-btn" id="next-btn" type="button">次へ</button>
+  </footer>
+</div>
+
+<script src="questions.js"></script>
+<script>
+  let deck = shuffle(QUESTIONS);
+  let idx = -1;
+  const $q = document.getElementById("q");
+  const $source = document.getElementById("source");
+  const $count = document.getElementById("count");
+
+  function next() {
+    idx++;
+    if (idx >= deck.length) {
+      deck = shuffle(QUESTIONS);
+      idx = 0;
+    }
+    const item = deck[idx];
+    $q.style.animation = "none";
+    void $q.offsetWidth;
+    $q.style.animation = "";
+    $q.textContent = item.t;
+    $source.textContent = "出典: " + item.s;
+    $count.textContent = (idx + 1) + " / " + deck.length;
+  }
+
+  const $tap = document.getElementById("tap-area");
+  const $btn = document.getElementById("next-btn");
+
+  let lastTap = 0;
+  function handleTap(e) {
+    const now = Date.now();
+    if (now - lastTap < 120) return;
+    lastTap = now;
+    next();
+  }
+  $tap.addEventListener("click", handleTap);
+  $btn.addEventListener("click", (e) => { e.stopPropagation(); handleTap(e); });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter" || e.key === "ArrowRight") {
+      e.preventDefault(); next();
+    }
+  });
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+</script>
+</body>
+</html>
